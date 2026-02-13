@@ -3,196 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Andy - Assistente Pessoal</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Andy - Assistente Pessoal v3.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #1c1c1e 0%, #000000 100%);
+            --bg-gradient: linear-gradient(135deg, #1e1e2f 0%, #121212 100%);
             --accent: #00d2ff;
-            --glass: rgba(255, 255, 255, 0.03);
             --text: #ffffff;
         }
 
-        /* Temas Dinâmicos por Perfil/Humor */
+        /* Temas Dinâmicos */
         body.perfil-tarcio { --bg-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); --accent: #00d2ff; }
         body.perfil-andressa { --bg-gradient: linear-gradient(135deg, #2d1b33 0%, #4a2c5a 100%); --accent: #a29bfe; }
         body.triste { --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); --accent: #4a90e2; }
-        body.feliz { --bg-gradient: linear-gradient(135deg, #1e272e 0%, #2f3640 100%); --accent: #f1c40f; }
-        body.sos { --bg-gradient: linear-gradient(135deg, #4b0000 0%, #000000 100%); --accent: #ff4757; animation: alert-pulse 1s infinite; }
-
-        @keyframes alert-pulse { 50% { opacity: 0.8; } }
+        body.feliz { --bg-gradient: linear-gradient(135deg, #1d4350 0%, #f48fb1 100%); --accent: #ff4081; }
+        body.sos { --bg-gradient: linear-gradient(135deg, #870000 0%, #190a05 100%); --accent: #ff0000; }
+        body.foco { --bg-gradient: linear-gradient(135deg, #000000 0%, #1a1a1a 100%); --accent: #555555; }
 
         body {
-            font-family: 'Montserrat', sans-serif;
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            transition: all 1.2s ease;
-            overflow: hidden;
+            margin: 0; height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: var(--bg-gradient); color: var(--text);
+            font-family: 'Montserrat', sans-serif; transition: all 0.8s ease; overflow: hidden;
         }
 
-        .container {
-            width: 100%;
-            max-width: 360px;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .perfil-header {
-            font-size: 10px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            opacity: 0.5;
-            margin-bottom: 40px;
-        }
-
-        .mic-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 40px;
-        }
+        #user-display { position: absolute; top: 20px; font-weight: 600; letter-spacing: 2px; opacity: 0.7; }
+        #response-box { width: 85%; max-width: 600px; text-align: center; font-size: 1.2rem; min-height: 80px; line-height: 1.5; }
 
         .mic-btn {
-            background: var(--glass);
-            border: 1px solid rgba(255,255,255,0.1);
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 35px;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.4s;
-            backdrop-filter: blur(10px);
-            z-index: 2;
-            position: relative;
-            outline: none;
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1); border: 2px solid var(--accent);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s; box-shadow: 0 0 20px var(--accent); margin: 20px;
         }
 
-        .mic-btn.listening {
-            border-color: var(--accent);
-            box-shadow: 0 0 30px var(--accent);
-            transform: scale(1.05);
+        .mic-btn.listening { animation: pulse 1.5s infinite; background: var(--accent); }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 var(--accent); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(0,0,0,0); }
+            100% { transform: scale(1); }
         }
 
-        .pulse-ring {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100px; height: 100px;
-            border: 2px solid var(--accent);
-            border-radius: 50%;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .mic-btn.listening + .pulse-ring {
-            animation: pulse-ring 1.5s infinite;
-        }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 0.6; }
-            100% { transform: scale(1.7); opacity: 0; }
-        }
-
-        #response-box {
-            background: var(--glass);
-            padding: 25px;
-            border-radius: 20px;
-            min-height: 60px;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 20px;
-            font-weight: 300;
-            font-size: 15px;
-            line-height: 1.6;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .loader {
-            height: 2px;
-            width: 40px;
-            background: var(--accent);
-            margin: 0 auto 15px;
-            display: none;
-            border-radius: 10px;
-            animation: load-anim 0.8s infinite alternate;
-        }
-
-        @keyframes load-anim { from { width: 10px; opacity: 0.2; } to { width: 50px; opacity: 1; } }
-
-        .btn-stop {
-            font-size: 10px;
-            opacity: 0.3;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: white;
-            letter-spacing: 1px;
-            padding: 10px;
-        }
+        #loader { display: none; width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body id="body">
 
-<div class="container">
-    <div id="user-display" class="perfil-header">PERFIL: CARREGANDO...</div>
+    <div id="user-display">INICIALIZANDO...</div>
+    <div id="response-box">Aguardando comando...</div>
     
-    <div class="mic-container">
-        <button id="btn" class="mic-btn">🎙️</button>
-        <div class="pulse-ring"></div>
-    </div>
+    <button class="mic-btn" id="btn">
+        <svg fill="white" height="30" viewBox="0 0 24 24" width="30"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+    </button>
 
-    <div class="loader" id="loader"></div>
-    
-    <div id="response-box">
-        Toque no microfone para falar com a Andy.
-    </div>
-
-    <button class="btn-stop" onclick="window.speechSynthesis.cancel()">[ PARAR FALA ]</button>
-</div>
+    <div id="loader"></div>
 
 <script type="module">
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    // --- CONFIGURAÇÃO (ATENÇÃO TÁRCIO) ---
-    const API_KEY = "AIzaSyBXQAJ_yiKf7rRrX1yBTpV4JAnqKR9kcJU"; // Certifique-se de que não há espaços extras
-    
+    // --- CONFIGURAÇÃO ---
+    const API_KEY = "AIzaSyBXQAJ_yiKf7rRrX1yBTpV4JAnqKR9kcJU"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let usuarioAtivo = localStorage.getItem('usuarioAtivo') || "Tárcio";
-    let modoSilencioso = false;
     let voices = [];
 
     const meusContatos = {
-        "mãe": "5593991477716",
         "andressa": "5593992066978",
-        "tárcio": "5593981054823",
-        "danilo": "5593984147506"
+        "tárcio": "5593981054823"
+    };
+
+    const automacaoCasa = {
+        "luz": { "on": "URL_AQUI", "off": "URL_AQUI" }
     };
 
     const responseBox = document.getElementById('response-box');
-    const body = document.getElementById('body');
     const userDisplay = document.getElementById('user-display');
     const loader = document.getElementById('loader');
+    const body = document.body;
 
-    // Inicialização do Motor de Voz
+    // --- SÍNTESE DE VOZ ---
     const initVoices = () => { voices = window.speechSynthesis.getVoices(); };
     window.speechSynthesis.onvoiceschanged = initVoices;
     initVoices();
 
-    function speak(text, pitch = 1.2, rate = 1.05) {
+    function speak(text, pitch = 1.1, rate = 1.05) {
         window.speechSynthesis.cancel();
-        if (modoSilencioso) return;
         const utter = new SpeechSynthesisUtterance(text);
         utter.voice = voices.find(v => v.lang.includes('pt-BR')) || voices[0];
         utter.pitch = pitch;
@@ -201,26 +100,29 @@
     }
 
     function darSaudacao() {
-        userDisplay.innerText = PERFIL: ${usuarioAtivo};
+        userDisplay.innerText = `PERFIL: ${usuarioAtivo.toUpperCase()}`;
         body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa";
         const hora = new Date().getHours();
-        let s = (hora < 12) ? "Bom dia" : (hora < 18) ? "Boa tarde" : "Boa noite";
-        let msg = usuarioAtivo === "Tárcio" ? ${s}, meu criador. : ${s}, Andressa. Como posso ajudar?;
+        let saudacao = (hora < 12) ? "Bom dia" : (hora < 18) ? "Boa tarde" : "Boa noite";
+        let msg = usuarioAtivo === "Tárcio" ? `${saudacao}, meu criador.` : `${saudacao}, Andressa. Como posso ajudar?`;
         responseBox.innerText = msg;
         speak(msg, usuarioAtivo === "Andressa" ? 1.3 : 1.1);
     }
 
-    // Reconhecimento de Voz
+    // --- AUTOMAÇÃO ---
+    async function controlarCasa(dispositivo, estado) {
+        const acao = estado === "ligar" ? "on" : "off";
+        body.style.filter = estado === "ligar" ? "brightness(1.2)" : "brightness(0.7)";
+        speak(`${dispositivo} ${estado === "ligar" ? "ligada" : "desligada"}`);
+        // await fetch(automacaoCasa[dispositivo][acao], { mode: 'no-cors' });
+    }
+
+    // --- RECONHECIMENTO DE VOZ ---
     const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
     recognition.lang = 'pt-BR';
-    recognition.continuous = false;
 
-    document.getElementById('btn').onclick = () => { 
-        try {
-            recognition.start();
-            // Truque de performance: prepara o áudio enquanto o usuário fala
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-        } catch(e) { console.log("Microfone já está ativo."); }
+    document.getElementById('btn').onclick = () => {
+        try { recognition.start(); } catch(e) { console.log("Já ouvindo..."); }
     };
 
     recognition.onstart = () => { document.getElementById('btn').classList.add('listening'); };
@@ -228,65 +130,80 @@
 
     recognition.onresult = async (event) => {
         const userText = event.results[0][0].transcript.toLowerCase();
-        responseBox.innerText = "...";
         loader.style.display = "block";
+        responseBox.innerText = "...";
 
-        // Comandos Rápidos Locais
-        if (userText.includes("aqui é o tárcio")) { usuarioAtivo = "Tárcio"; localStorage.setItem('usuarioAtivo', "Tárcio"); darSaudacao(); loader.style.display = "none"; return; }
-        if (userText.includes("aqui é a andressa")) { usuarioAtivo = "Andressa"; localStorage.setItem('usuarioAtivo', "Andressa"); darSaudacao(); loader.style.display = "none"; return; }
+        // 1. Comandos Locais (Perfil)
+        if (userText.includes("aqui é o tárcio")) {
+            usuarioAtivo = "Tárcio"; localStorage.setItem('usuarioAtivo', "Tárcio");
+            darSaudacao(); loader.style.display = "none"; return;
+        }
+        if (userText.includes("aqui é a andressa")) {
+            usuarioAtivo = "Andressa"; localStorage.setItem('usuarioAtivo', "Andressa");
+            darSaudacao(); loader.style.display = "none"; return;
+        }
 
-        // SOS / Emergência
+        // 2. SOS
         if (userText.includes("emergência") || userText.includes("socorro")) {
-            body.className = "sos"; speak("Iniciando protocolo de socorro.");
+            body.className = "sos";
+            speak("Protocolo de emergência.");
             navigator.geolocation.getCurrentPosition(pos => {
-                const url = https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude};
-                window.open(https://wa.me/${meusContatos["andressa"]}?text=SOS! Minha localização: ${url}, '_blank');
+                const url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                window.open(`https://wa.me/${meusContatos["andressa"]}?text=SOS! Localização: ${url}`, '_blank');
             });
             loader.style.display = "none"; return;
         }
 
-        // Processamento via Gemini IA
+        // 3. Automação
+        if (userText.includes("luz")) {
+            let estado = (userText.includes("ligar") || userText.includes("acender")) ? "ligar" : "desligar";
+            controlarCasa("luz", estado);
+            loader.style.display = "none"; return;
+        }
+
+        // 4. Busca Direta
+        if (userText.startsWith("pesquise sobre") || userText.startsWith("procure por")) {
+            let termo = userText.replace(/pesquise sobre|procure por/g, "").trim();
+            speak(`Buscando ${termo}`);
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(termo)}`, '_blank');
+            loader.style.display = "none"; return;
+        }
+
+        // 5. Inteligência Artificial Gemini
         try {
-            const mKey = memoria_${usuarioAtivo};
-            const prompt = `Você é a Andy, 25 anos. Usuário: ${usuarioAtivo}. Criador: Tárcio. 
-                            Memória: ${localStorage.getItem(mKey) || "Ainda não sei muito sobre você"}. 
-                            Responda com personalidade, inteligência e empatia. 
-                            Use obrigatoriamente [FELIZ], [TRISTE] ou [CALMA] no fim da frase. 
-                            Frase do usuário: "${userText}"`;
-            
+            const mKey = `memoria_${usuarioAtivo}`;
+            const prompt = `Você é a Andy, 25 anos. Usuário: ${usuarioAtivo}. Criador: Tárcio.
+                            Memória: ${localStorage.getItem(mKey) || "Nada registrado"}.
+                            Instrução: Se não souber algo atual, diga "BUSCA: [termo]". Caso contrário, responda e use [FELIZ] ou [TRISTE] no fim.
+                            Frase: "${userText}"`;
+
             const result = await model.generateContent(prompt);
-            const response = await result.response;
-            let text = response.text();
-            
-            // Lógica de Emoção Visual
-            let p = 1.2;
-            if (text.includes("[TRISTE]")) { body.className = "triste"; p = 0.9; }
-            else if (text.includes("[FELIZ]")) { body.className = "feliz"; p = 1.4; }
-            else { body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa"; }
-            
-            // Limpa o texto das tags e fala
-            text = text.replace(/\[.*?\]/g, "").trim();
-            loader.style.display = "none";
-            responseBox.innerText = text;
-            speak(text, usuarioAtivo === "Andressa" ? p + 0.15 : p);
+            let text = result.response.text();
 
-            // Sistema de aprendizado por voz
-            if (userText.includes("aprenda que") || userText.includes("lembre que")) {
-                let fato = userText.replace(/aprenda que|lembre que/g, "").trim();
-                localStorage.setItem(mKey, (localStorage.getItem(mKey) || "") + " | " + fato);
-            }
-
-        } catch (e) {
-            loader.style.display = "none";
-            console.error("Erro na Andy:", e);
-            
-            // Feedback de Diagnóstico
-            if (e.message.includes("API key not valid")) {
-                responseBox.innerText = "Nota da Andy: Tárcio, minha chave API parece inválida. Verifique se não há espaços extras ou se ela foi criada corretamente no AI Studio.";
-                speak("Meu criador, temos um problema com a chave API.");
+            if (text.includes("BUSCA:")) {
+                let busca = text.split("BUSCA:")[1].trim();
+                speak("Vou pesquisar isso para você.");
+                window.open(`https://www.google.com/search?q=${encodeURIComponent(busca)}`, '_blank');
+                responseBox.innerText = "Pesquisa aberta no navegador.";
             } else {
-                responseBox.innerText = "Andy: Tive um pequeno soluço na conexão. Pode repetir? Erro: " + e.message;
+                let p = 1.1;
+                if (text.includes("[TRISTE]")) { body.className = "triste"; p = 0.8; }
+                else if (text.includes("[FELIZ]")) { body.className = "feliz"; p = 1.3; }
+                else { body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa"; }
+
+                text = text.replace(/\[.*?\]/g, "").trim();
+                responseBox.innerText = text;
+                speak(text, usuarioAtivo === "Andressa" ? p + 0.2 : p);
+                
+                // Aprendizado automático
+                if (userText.includes("lembre que") || userText.includes("aprenda que")) {
+                    localStorage.setItem(mKey, (localStorage.getItem(mKey) || "") + " | " + userText);
+                }
             }
+        } catch (e) {
+            responseBox.innerText = "Erro de conexão.";
+        } finally {
+            loader.style.display = "none";
         }
     };
 
