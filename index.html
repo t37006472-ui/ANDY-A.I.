@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Andy - Minimal</title>
+    <title>Andy - Minimal v2</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -19,7 +19,9 @@
         body.perfil-andressa { --bg-gradient: linear-gradient(135deg, #2d1b33 0%, #4a2c5a 100%); --accent: #a29bfe; }
         body.triste { --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); --accent: #4a90e2; }
         body.feliz { --bg-gradient: linear-gradient(135deg, #1e272e 0%, #2f3640 100%); --accent: #f1c40f; }
-        body.sos { --bg-gradient: linear-gradient(135deg, #4b0000 0%, #000000 100%); --accent: #ff4757; }
+        body.sos { --bg-gradient: linear-gradient(135deg, #4b0000 0%, #000000 100%); --accent: #ff4757; animation: alert-pulse 1s infinite; }
+
+        @keyframes alert-pulse { 50% { opacity: 0.8; } }
 
         body {
             font-family: 'Montserrat', sans-serif;
@@ -31,7 +33,8 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            transition: all 1.5s ease;
+            transition: all 1.2s ease;
+            overflow: hidden;
         }
 
         .container {
@@ -49,7 +52,6 @@
             margin-bottom: 40px;
         }
 
-        /* Botão de Microfone Minimalista */
         .mic-container {
             position: relative;
             display: inline-block;
@@ -63,26 +65,27 @@
             height: 100px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 30px;
+            font-size: 35px;
             color: var(--accent);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.5s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: 0.4s;
             backdrop-filter: blur(10px);
+            z-index: 2;
+            position: relative;
         }
 
         .mic-btn.listening {
             border-color: var(--accent);
-            box-shadow: 0 0 40px var(--accent);
+            box-shadow: 0 0 30px var(--accent);
             transform: scale(1.05);
         }
 
         .pulse-ring {
             position: absolute;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100px; height: 100px;
             border: 2px solid var(--accent);
             border-radius: 50%;
             opacity: 0;
@@ -94,53 +97,52 @@
         }
 
         @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.6); opacity: 0; }
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1.7); opacity: 0; }
         }
 
-        /* Texto de Resposta Estilizado */
         #response-box {
             background: var(--glass);
             padding: 25px;
             border-radius: 20px;
-            min-height: 80px;
+            min-height: 60px;
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255,255,255,0.05);
             margin-bottom: 20px;
             font-weight: 300;
             font-size: 15px;
             line-height: 1.6;
+            max-height: 250px;
+            overflow-y: auto;
         }
 
         .loader {
             height: 2px;
-            width: 50px;
+            width: 40px;
             background: var(--accent);
             margin: 0 auto 15px;
             display: none;
             border-radius: 10px;
-            animation: loading-bar 1s infinite alternate;
+            animation: load-anim 0.8s infinite alternate;
         }
 
-        @keyframes loading-bar {
-            from { width: 10px; opacity: 0.3; }
-            to { width: 60px; opacity: 1; }
-        }
+        @keyframes load-anim { from { width: 10px; opacity: 0.2; } to { width: 50px; opacity: 1; } }
 
-        .footer-controls {
-            font-size: 11px;
-            opacity: 0.4;
+        .btn-stop {
+            font-size: 10px;
+            opacity: 0.3;
             cursor: pointer;
-            transition: 0.3s;
+            background: none;
+            border: none;
+            color: white;
+            letter-spacing: 1px;
         }
-
-        .footer-controls:hover { opacity: 1; }
     </style>
 </head>
 <body id="body">
 
 <div class="container">
-    <div id="user-display" class="perfil-header">PERFIL: TÁRCIO</div>
+    <div id="user-display" class="perfil-header">PERFIL: CARREGANDO...</div>
     
     <div class="mic-container">
         <button id="btn" class="mic-btn">🎙️</button>
@@ -150,22 +152,21 @@
     <div class="loader" id="loader"></div>
     
     <div id="response-box">
-        Andy está ouvindo você...
+        Toque no microfone para falar com a Andy.
     </div>
 
-    <div class="footer-controls" onclick="window.speechSynthesis.cancel()">
-        PARAR FALA
-    </div>
+    <button class="btn-stop" onclick="window.speechSynthesis.cancel()">[ PARAR FALA ]</button>
 </div>
 
 <script type="module">
-    import { GoogleGenerativeAI } from "https://cdn.skypack.dev/@google/generative-ai";
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    const API_KEY = "AIzaSyAPzqaDAWY6Jjnkm3Ah4SjaXJj4mPmwvpA"; 
+    // --- CONFIGURAÇÃO ---
+    const API_KEY = "AIzaSyAPzqaDAWY6Jjnkm3Ah4SjaXJj4mPmwvpA"; // <--- COLOQUE SUA CHAVE AQUI
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ 
         model: "gemini-1.5-flash",
-        generationConfig: { maxOutputTokens: 300, temperature: 0.8 }
+        generationConfig: { maxOutputTokens: 350, temperature: 0.8 }
     });
 
     let usuarioAtivo = localStorage.getItem('usuarioAtivo') || "Tárcio";
@@ -183,9 +184,10 @@
     const userDisplay = document.getElementById('user-display');
     const loader = document.getElementById('loader');
 
-    const loadVoices = () => { voices = window.speechSynthesis.getVoices(); };
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices();
+    // Inicialização de Voz
+    const initVoices = () => { voices = window.speechSynthesis.getVoices(); };
+    window.speechSynthesis.onvoiceschanged = initVoices;
+    initVoices();
 
     function speak(text, pitch = 1.2, rate = 1.05) {
         window.speechSynthesis.cancel();
@@ -198,71 +200,4 @@
     }
 
     function darSaudacao() {
-        userDisplay.innerText = `PERFIL: ${usuarioAtivo}`;
-        body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa";
-        const hora = new Date().getHours();
-        let s = (hora < 12) ? "Bom dia" : (hora < 18) ? "Boa tarde" : "Boa noite";
-        let msg = usuarioAtivo === "Tárcio" ? `${s}, meu criador.` : `${s}, Andressa. Como posso ajudar?`;
-        responseBox.innerText = msg;
-        speak(msg, usuarioAtivo === "Andressa" ? 1.3 : 1.1);
-    }
-
-    const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
-    recognition.lang = 'pt-BR';
-
-    document.getElementById('btn').onclick = () => { 
-        recognition.start(); 
-        window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-    };
-
-    recognition.onstart = () => { document.getElementById('btn').classList.add('listening'); };
-    recognition.onend = () => { document.getElementById('btn').classList.remove('listening'); };
-
-    recognition.onresult = async (event) => {
-        const userText = event.results[0][0].transcript.toLowerCase();
-        responseBox.innerText = "...";
-        loader.style.display = "block";
-
-        if (userText.includes("aqui é o tárcio")) { usuarioAtivo = "Tárcio"; localStorage.setItem('usuarioAtivo', "Tárcio"); darSaudacao(); loader.style.display = "none"; return; }
-        if (userText.includes("aqui é a andressa")) { usuarioAtivo = "Andressa"; localStorage.setItem('usuarioAtivo', "Andressa"); darSaudacao(); loader.style.display = "none"; return; }
-
-        if (userText.includes("emergência") || userText.includes("socorro")) {
-            body.className = "sos"; speak("Iniciando SOS.");
-            navigator.geolocation.getCurrentPosition(pos => {
-                const url = `http://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                window.open(`https://wa.me/${meusContatos["andressa"]}?text=SOS! Localização: ${url}`, '_blank');
-            }); 
-            loader.style.display = "none"; return;
-        }
-
-        try {
-            const mKey = `memoria_${usuarioAtivo}`;
-            const prompt = `Andy, 25 anos. Criador: Tárcio. Usuário: ${usuarioAtivo}. Memória: ${localStorage.getItem(mKey)}. Responda com elegância e clareza. Use [FELIZ] ou [TRISTE] no fim. Frase: ${userText}`;
-            
-            const result = await model.generateContent(prompt);
-            let text = (await result.response).text();
-            
-            let p = 1.2;
-            if (text.includes("[TRISTE]")) { body.className = "triste"; p = 0.9; }
-            else if (text.includes("[FELIZ]")) { body.className = "feliz"; p = 1.4; }
-            else { body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa"; }
-            
-            text = text.replace(/\[.*?\]/g, "").trim();
-            loader.style.display = "none";
-            responseBox.innerText = text;
-            speak(text, usuarioAtivo === "Andressa" ? p + 0.15 : p);
-
-            if (userText.includes("aprenda que")) {
-                localStorage.setItem(mKey, (localStorage.getItem(mKey) || "") + " | " + userText.replace("aprenda que", ""));
-            }
-        } catch (e) {
-    loader.style.display = "none";
-    responseBox.innerText = "Erro: " + e.message;
-    console.log(e);
-}
-
-
-    window.onload = darSaudacao;
-</script>
-</body>
-</html>
+        userDisplay.innerText = `PERFIL: ${usuarioAtivo
