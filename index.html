@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Andy - Minimal v2.2</title>
+    <title>Andy - Assistente Pessoal</title>
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -14,6 +14,7 @@
             --text: #ffffff;
         }
 
+        /* Temas Dinâmicos por Perfil/Humor */
         body.perfil-tarcio { --bg-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); --accent: #00d2ff; }
         body.perfil-andressa { --bg-gradient: linear-gradient(135deg, #2d1b33 0%, #4a2c5a 100%); --accent: #a29bfe; }
         body.triste { --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); --accent: #4a90e2; }
@@ -73,6 +74,7 @@
             backdrop-filter: blur(10px);
             z-index: 2;
             position: relative;
+            outline: none;
         }
 
         .mic-btn.listening {
@@ -135,6 +137,7 @@
             border: none;
             color: white;
             letter-spacing: 1px;
+            padding: 10px;
         }
     </style>
 </head>
@@ -160,86 +163,134 @@
 <script type="module">
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    // Mantenha apenas UMA chave e sem espaços
-    const API_KEY = "AIzaSyBXQAJ_yiKf7rRrX1yBTpV4JAnqKR9kcJU"; 
+    // --- CONFIGURAÇÃO (ATENÇÃO TÁRCIO) ---
+    const API_KEY = "AIzaSyBXQAJ_yiKf7rRrX1yBTpV4JAnqKR9kcJU"; // Certifique-se de que não há espaços extras
+    
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let usuarioAtivo = localStorage.getItem('usuarioAtivo') || "Tárcio";
     let modoSilencioso = false;
+    let voices = [];
 
+    const meusContatos = {
+        "mãe": "5593991477716",
+        "andressa": "5593992066978",
+        "tárcio": "5593981054823",
+        "danilo": "5593984147506"
+    };
+
+    const responseBox = document.getElementById('response-box');
+    const body = document.getElementById('body');
     const userDisplay = document.getElementById('user-display');
     const loader = document.getElementById('loader');
-    const responseBox = document.getElementById('response-box'); // Verifique se este ID existe no HTML
-    const body = document.body;
 
-    const initVoices = () => { 
-        window.speechSynthesis.getVoices(); 
-    };
+    // Inicialização do Motor de Voz
+    const initVoices = () => { voices = window.speechSynthesis.getVoices(); };
     window.speechSynthesis.onvoiceschanged = initVoices;
     initVoices();
 
-    function speak(text, rate = 1) {
+    function speak(text, pitch = 1.2, rate = 1.05) {
+        window.speechSynthesis.cancel();
         if (modoSilencioso) return;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'pt-BR';
-        utterance.rate = rate;
-        window.speechSynthesis.speak(utterance);
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.voice = voices.find(v => v.lang.includes('pt-BR')) || voices[0];
+        utter.pitch = pitch;
+        utter.rate = rate;
+        window.speechSynthesis.speak(utter);
     }
 
     function darSaudacao() {
-        userDisplay.innerText = `PERFIL: ${usuarioAtivo}`;
+        userDisplay.innerText = PERFIL: ${usuarioAtivo};
         body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa";
         const hora = new Date().getHours();
         let s = (hora < 12) ? "Bom dia" : (hora < 18) ? "Boa tarde" : "Boa noite";
-        let msg = usuarioAtivo === "Tárcio" ? `${s}, meu criador.` : `${s}, Andressa. Como posso ajudar?`;
+        let msg = usuarioAtivo === "Tárcio" ? ${s}, meu criador. : ${s}, Andressa. Como posso ajudar?;
         responseBox.innerText = msg;
         speak(msg, usuarioAtivo === "Andressa" ? 1.3 : 1.1);
     }
 
+    // Reconhecimento de Voz
     const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
     recognition.lang = 'pt-BR';
+    recognition.continuous = false;
+
+    document.getElementById('btn').onclick = () => { 
+        try {
+            recognition.start();
+            // Truque de performance: prepara o áudio enquanto o usuário fala
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+        } catch(e) { console.log("Microfone já está ativo."); }
+    };
+
+    recognition.onstart = () => { document.getElementById('btn').classList.add('listening'); };
+    recognition.onend = () => { document.getElementById('btn').classList.remove('listening'); };
 
     recognition.onresult = async (event) => {
         const userText = event.results[0][0].transcript.toLowerCase();
         responseBox.innerText = "...";
         loader.style.display = "block";
 
+        // Comandos Rápidos Locais
         if (userText.includes("aqui é o tárcio")) { usuarioAtivo = "Tárcio"; localStorage.setItem('usuarioAtivo', "Tárcio"); darSaudacao(); loader.style.display = "none"; return; }
         if (userText.includes("aqui é a andressa")) { usuarioAtivo = "Andressa"; localStorage.setItem('usuarioAtivo', "Andressa"); darSaudacao(); loader.style.display = "none"; return; }
-        
+
+        // SOS / Emergência
         if (userText.includes("emergência") || userText.includes("socorro")) {
-            body.className = "sos"; speak("SOS ativado.");
+            body.className = "sos"; speak("Iniciando protocolo de socorro.");
             navigator.geolocation.getCurrentPosition(pos => {
-                const url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                window.open(`https://wa.me/SEU_NUMERO_AQUI?text=EMERGÊNCIA! Minha localização: ${url}`, '_blank');
+                const url = https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude};
+                window.open(https://wa.me/${meusContatos["andressa"]}?text=SOS! Minha localização: ${url}, '_blank');
             });
             loader.style.display = "none"; return;
         }
 
+        // Processamento via Gemini IA
         try {
-            const mKey = `memoria_${usuarioAtivo}`;
-            const prompt = `Andy, 25 anos. Usuário: ${usuarioAtivo}. Criador: Tárcio. Responda com clareza. Use [FELIZ] ou [TRISTE] no fim. Frase: ${userText}`;
-
+            const mKey = memoria_${usuarioAtivo};
+            const prompt = `Você é a Andy, 25 anos. Usuário: ${usuarioAtivo}. Criador: Tárcio. 
+                            Memória: ${localStorage.getItem(mKey) || "Ainda não sei muito sobre você"}. 
+                            Responda com personalidade, inteligência e empatia. 
+                            Use obrigatoriamente [FELIZ], [TRISTE] ou [CALMA] no fim da frase. 
+                            Frase do usuário: "${userText}"`;
+            
             const result = await model.generateContent(prompt);
             const response = await result.response;
             let text = response.text();
-
+            
+            // Lógica de Emoção Visual
             let p = 1.2;
             if (text.includes("[TRISTE]")) { body.className = "triste"; p = 0.9; }
             else if (text.includes("[FELIZ]")) { body.className = "feliz"; p = 1.4; }
-
+            else { body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa"; }
+            
+            // Limpa o texto das tags e fala
             text = text.replace(/\[.*?\]/g, "").trim();
             loader.style.display = "none";
             responseBox.innerText = text;
             speak(text, usuarioAtivo === "Andressa" ? p + 0.15 : p);
 
+            // Sistema de aprendizado por voz
+            if (userText.includes("aprenda que") || userText.includes("lembre que")) {
+                let fato = userText.replace(/aprenda que|lembre que/g, "").trim();
+                localStorage.setItem(mKey, (localStorage.getItem(mKey) || "") + " | " + fato);
+            }
+
         } catch (e) {
             loader.style.display = "none";
-            console.error(e);
-            responseBox.innerText = "Erro: " + e.message;
+            console.error("Erro na Andy:", e);
+            
+            // Feedback de Diagnóstico
+            if (e.message.includes("API key not valid")) {
+                responseBox.innerText = "Nota da Andy: Tárcio, minha chave API parece inválida. Verifique se não há espaços extras ou se ela foi criada corretamente no AI Studio.";
+                speak("Meu criador, temos um problema com a chave API.");
+            } else {
+                responseBox.innerText = "Andy: Tive um pequeno soluço na conexão. Pode repetir? Erro: " + e.message;
+            }
         }
     };
 
-    document.getElementById('btn').onclick = () => recognition.start();
+    window.onload = darSaudacao;
 </script>
+</body>
+</html>
