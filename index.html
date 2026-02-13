@@ -161,7 +161,7 @@
 <script type="module">
     import { GoogleGenerativeAI } from "https://cdn.skypack.dev/@google/generative-ai";
 
-    const API_KEY = "SUA_CHAVE_AQUI"; 
+    const API_KEY = "AIzaSyAPzqaDAWY6Jjnkm3Ah4SjaXJj4mPmwvpA"; 
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ 
         model: "gemini-1.5-flash",
@@ -173,9 +173,9 @@
     let voices = [];
 
     const meusContatos = {
-        "mãe": "5500000000000",
-        "andressa": "5500000000000",
-        "tárcio": "5500000000000"
+        "mãe": "5593991477716",
+        "andressa": "5593992066978",
+        "tárcio": "5593981058423"
     };
 
     const responseBox = document.getElementById('response-box');
@@ -230,7 +230,7 @@
             body.className = "sos"; speak("Iniciando SOS.");
             navigator.geolocation.getCurrentPosition(pos => {
                 const url = `http://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                window.open(`https://wa.me/${meusContatos["mãe"]}?text=SOS! Localização: ${url}`, '_blank');
+                window.open(`https://wa.me/${meusContatos["andressa"]}?text=SOS! Localização: ${url}`, '_blank');
             }); 
             loader.style.display = "none"; return;
         }
