@@ -1,5 +1,9 @@
-const CACHE_NAME = 'assistente-v1';
-const assets = ['./', './index.html', './manifest.json'];
+const CACHE_NAME = 'andy-v1';
+const assets = [
+  './',
+  './index.html',
+  './manifest.json'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(assets)));
