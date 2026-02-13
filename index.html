@@ -1,10 +1,188 @@
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#00d2ff">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andy - Assistente Pessoal</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00d2ff">
+    <style>
+        :root { --bg: #0f2027; --card-bg: rgba(255, 255, 255, 0.05); --text: white; --primary: #00d2ff; }
+        
+        /* Temas de Perfil */
+        body.perfil-tarcio { --bg: #0f2027; --primary: #00d2ff; }
+        body.perfil-andressa { --bg: #2d1b33; --primary: #a29bfe; --text: #f8f1ff; }
+        
+        /* Cores de Emoção */
+        body.triste { --bg: #1a1a2e; --primary: #4a90e2; }
+        body.feliz { --bg: #2d3436; --primary: #f1c40f; }
+        body.sos { --bg: #7f0000; --primary: #ff0000; animation: blinker 1s linear infinite; }
+        
+        @keyframes blinker { 50% { opacity: 0.8; } }
 
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("Service Worker Registrado!"))
-      .catch(err => console.log("Erro no SW:", err));
-  }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; transition: background 1.2s ease, color 0.5s; overflow: hidden; }
+        .card { background: var(--card-bg); padding: 30px; border-radius: 25px; text-align: center; border: 1px solid rgba(128,128,128,0.2); width: 90%; max-width: 400px; backdrop-filter: blur(15px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .mic-btn { background: var(--primary); border: none; width: 80px; height: 80px; border-radius: 50%; cursor: pointer; font-size: 35px; color: white; transition: 0.3s; margin-bottom: 20px; box-shadow: 0 0 15px var(--primary); }
+        .mic-btn.listening { background: #ff4757; animation: pulse 1s infinite; }
+        #response-text { margin-top: 20px; font-size: 1rem; line-height: 1.4; max-height: 150px; overflow-y: auto; padding: 10px; }
+        .status-bar { font-size: 0.8rem; opacity: 0.7; margin-top: 10px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .loader { display: none; margin: 10px auto; border: 3px solid #ccc; border-top: 3px solid var(--primary); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body id="body">
+
+<div class="card">
+    <div id="user-display" style="font-weight: bold; margin-bottom: 10px;">Perfil: Carregando...</div>
+    <button id="btn" class="mic-btn">🎙️</button>
+    <div id="status">Toque para falar com a Andy</div>
+    <div class="loader" id="loader"></div>
+    <div id="response-text">Aguardando comando...</div>
+    <button style="background:none; border:1px solid gray; color:gray; cursor:pointer; margin-top:15px; border-radius:5px;" onclick="window.speechSynthesis.cancel()">Parar fala</button>
+</div>
+
+<script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+    const API_KEY = "SUA_CHAVE_API_AQUI"; // <--- COLOQUE SUA CHAVE AQUI
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // --- ESTADO INICIAL ---
+    let usuarioAtivo = localStorage.getItem('usuarioAtivo') || "Tárcio";
+    let modoSilencioso = false;
+    let historicoConversa = [];
+
+    const meusContatos = {
+        "mãe": "5511999999999", // Substitua pelos números reais
+        "pai": "5511888888888",
+        "andressa": "5511977777777",
+        "tárcio": "5511966666666"
+    };
+
+    const responseDiv = document.getElementById('response-text');
+    const body = document.getElementById('body');
+    const userDisplay = document.getElementById('user-display');
+
+    // --- FUNÇÃO DE FALA EMOCIONAL ---
+    function speak(text, pitch = 1.2, rate = 1.0) {
+        window.speechSynthesis.cancel();
+        if (modoSilencioso) return;
+        
+        const utter = new SpeechSynthesisUtterance(text);
+        const voices = window.speechSynthesis.getVoices();
+        utter.voice = voices.find(v => v.lang.includes('pt')) || voices[0];
+        utter.pitch = pitch;
+        utter.rate = rate;
+        window.speechSynthesis.speak(utter);
+    }
+
+    // --- SAUDAÇÃO INTELIGENTE ---
+    function darSaudacao() {
+        userDisplay.innerText = `Perfil: ${usuarioAtivo}`;
+        body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa";
+        
+        const hora = new Date().getHours();
+        let saudacao = (hora < 12) ? "Bom dia" : (hora < 18) ? "Boa tarde" : "Boa noite";
+        let msg = usuarioAtivo === "Tárcio" ? `${saudacao}, meu criador.` : `${saudacao}, Andressa! Que prazer te ver.`;
+        
+        responseDiv.innerText = msg;
+        speak(msg, usuarioAtivo === "Andressa" ? 1.3 : 1.1);
+    }
+
+    // --- RECONHECIMENTO DE VOZ ---
+    const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+    recognition.lang = 'pt-BR';
+
+    document.getElementById('btn').onclick = () => { recognition.start(); document.getElementById('btn').classList.add('listening'); };
+
+    recognition.onresult = async (event) => {
+        document.getElementById('btn').classList.remove('listening');
+        const userText = event.results[0][0].transcript.toLowerCase();
+        responseDiv.innerText = `Você: "${userText}"`;
+
+        // 1. TROCA DE PERFIL
+        if (userText.includes("aqui é o tárcio") || userText.includes("perfil do tárcio")) {
+            usuarioAtivo = "Tárcio"; localStorage.setItem('usuarioAtivo', "Tárcio");
+            darSaudacao(); return;
+        }
+        if (userText.includes("aqui é a andressa") || userText.includes("perfil da andressa")) {
+            usuarioAtivo = "Andressa"; localStorage.setItem('usuarioAtivo', "Andressa");
+            darSaudacao(); return;
+        }
+
+        // 2. MODO SILENCIOSO
+        if (userText.includes("modo silencioso") || userText.includes("fica quieta")) {
+            modoSilencioso = true; speak("Modo silencioso ativado."); return;
+        }
+        if (userText.includes("pode falar")) {
+            modoSilencioso = false; speak("Já posso falar de novo."); return;
+        }
+
+        // 3. EMERGÊNCIA (SOS)
+        if (userText.includes("emergência") || userText.includes("socorro")) {
+            body.className = "sos";
+            speak("Protocolo SOS! Capturando localização.");
+            navigator.geolocation.getCurrentPosition(pos => {
+                const url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                window.open(`https://wa.me/${meusContatos["mãe"]}?text=EMERGÊNCIA! Localização: ${url}`, '_blank');
+            });
+            return;
+        }
+
+        // 4. WHATSAPP E LIGAÇÕES (DICIONÁRIO)
+        for (let nome in meusContatos) {
+            if (userText.includes(`enviar mensagem para ${nome}`)) {
+                let msg = userText.split("dizendo")[1] || "Oi!";
+                speak(`Preparando mensagem para ${nome}.`);
+                setTimeout(() => window.open(`https://wa.me/${meusContatos[nome]}?text=${encodeURIComponent(msg)}`, '_blank'), 1500);
+                return;
+            }
+            if (userText.includes(`ligar para ${nome}`)) {
+                speak(`Ligando para ${nome}.`);
+                window.location.href = `tel:${meusContatos[nome]}`;
+                return;
+            }
+        }
+
+        // 5. MEMÓRIA E IA (GEMINI)
+        const memoriaKey = `memoria_${usuarioAtivo}`;
+        let memoriaLonga = localStorage.getItem(memoriaKey) || "";
+
+        if (userText.includes("aprenda que") || userText.includes("lembre que")) {
+            const fato = userText.replace("aprenda que", "").replace("lembre que", "").trim();
+            localStorage.setItem(memoriaKey, memoriaLonga + " | " + fato);
+            speak("Entendido, guardei isso na sua memória."); return;
+        }
+
+        loader.style.display = "block";
+        try {
+            const prompt = `Seu nome é Andy, 25 anos, criada pelo Tárcio. Você fala com ${usuarioAtivo}.
+                            Memória sobre ele(a): ${memoriaLonga}.
+                            Analise o sentimento e no final use: [FELIZ], [TRISTE] ou [CALMA].
+                            Usuário: ${userText}`;
+            
+            const result = await model.generateContent(prompt);
+            let text = (await result.response).text();
+            
+            // Ajuste de Emoção Visual/Voz
+            let p = 1.2, r = 1.0;
+            if (text.includes("[TRISTE]")) { body.className = "triste"; p = 0.9; r = 0.8; }
+            else if (text.includes("[FELIZ]")) { body.className = "feliz"; p = 1.4; r = 1.1; }
+            else { body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa"; }
+            
+            text = text.replace(/\[.*?\]/g, "");
+            loader.style.display = "none";
+            responseDiv.innerText = text;
+            speak(text, usuarioAtivo === "Andressa" ? p + 0.2 : p, r);
+        } catch (e) {
+            responseDiv.innerText = "Estou com dificuldade de conexão agora.";
+        }
+    };
+
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    window.onload = darSaudacao;
 </script>
+</body>
+</html>
