@@ -256,10 +256,11 @@
                 localStorage.setItem(mKey, (localStorage.getItem(mKey) || "") + " | " + userText.replace("aprenda que", ""));
             }
         } catch (e) {
-            loader.style.display = "none";
-            responseBox.innerText = "Estou processando muita informação, tente novamente.";
-        }
-    };
+    loader.style.display = "none";
+    responseBox.innerText = "Erro: " + e.message;
+    console.log(e);
+}
+
 
     window.onload = darSaudacao;
 </script>
