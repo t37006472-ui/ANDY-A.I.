@@ -160,48 +160,39 @@
 <script type="module">
     import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    // --- CONFIGURAÇÃO ---
-    // Tárcio, certifique-se de que não há espaços antes ou depois da chave aqui:
+    // Mantenha apenas UMA chave e sem espaços
     const API_KEY = "AIzaSyBXQAJ_yiKf7rRrX1yBTpV4JAnqKR9kcJU"; 
-    
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let usuarioAtivo = localStorage.getItem('usuarioAtivo') || "Tárcio";
     let modoSilencioso = false;
-    let voices = [];
 
-    const meusContatos = {
-        "mãe": "5593991477716",
-        "andressa": "5593992066978",
-        "tárcio": "5593981058423"
-    };
-
-    const responseBox = document.getElementById('response-box');
-    const body = document.getElementById('body');
     const userDisplay = document.getElementById('user-display');
     const loader = document.getElementById('loader');
+    const responseBox = document.getElementById('response-box'); // Verifique se este ID existe no HTML
+    const body = document.body;
 
-    const initVoices = () => { voices = window.speechSynthesis.getVoices(); };
+    const initVoices = () => { 
+        window.speechSynthesis.getVoices(); 
+    };
     window.speechSynthesis.onvoiceschanged = initVoices;
     initVoices();
 
-    function speak(text, pitch = 1.2, rate = 1.05) {
-        window.speechSynthesis.cancel();
+    function speak(text, rate = 1) {
         if (modoSilencioso) return;
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.voice = voices.find(v => v.lang.includes('pt-BR')) || voices[0];
-        utter.pitch = pitch;
-        utter.rate = rate;
-        window.speechSynthesis.speak(utter);
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        utterance.rate = rate;
+        window.speechSynthesis.speak(utterance);
     }
 
     function darSaudacao() {
-        userDisplay.innerText = PERFIL: ${usuarioAtivo};
+        userDisplay.innerText = `PERFIL: ${usuarioAtivo}`;
         body.className = usuarioAtivo === "Tárcio" ? "perfil-tarcio" : "perfil-andressa";
         const hora = new Date().getHours();
         let s = (hora < 12) ? "Bom dia" : (hora < 18) ? "Boa tarde" : "Boa noite";
-        let msg = usuarioAtivo === "Tárcio" ? ${s}, meu criador. : ${s}, Andressa. Como posso ajudar?;
+        let msg = usuarioAtivo === "Tárcio" ? `${s}, meu criador.` : `${s}, Andressa. Como posso ajudar?`;
         responseBox.innerText = msg;
         speak(msg, usuarioAtivo === "Andressa" ? 1.3 : 1.1);
     }
@@ -209,37 +200,35 @@
     const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
     recognition.lang = 'pt-BR';
 
-    document.getElementById('btn').onclick = () => { 
-        try {
-            recognition.start();
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-        } catch(e) {}
-    };
-
-    recognition.onstart = () => { document.getElementById('btn').classList.add('listening'); };
-    recognition.onend = () => { document.getElementById('btn').classList.remove('listening'); };
-
     recognition.onresult = async (event) => {
         const userText = event.results[0][0].transcript.toLowerCase();
         responseBox.innerText = "...";
         loader.style.display = "block";
 
-        // Comandos de Perfil
         if (userText.includes("aqui é o tárcio")) { usuarioAtivo = "Tárcio"; localStorage.setItem('usuarioAtivo', "Tárcio"); darSaudacao(); loader.style.display = "none"; return; }
         if (userText.includes("aqui é a andressa")) { usuarioAtivo = "Andressa"; localStorage.setItem('usuarioAtivo', "Andressa"); darSaudacao(); loader.style.display = "none"; return; }
+        
+        if (userText.includes("emergência") || userText.includes("socorro")) {
+            body.className = "sos"; speak("SOS ativado.");
+            navigator.geolocation.getCurrentPosition(pos => {
+                const url = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                window.open(`https://wa.me/SEU_NUMERO_AQUI?text=EMERGÊNCIA! Minha localização: ${url}`, '_blank');
+            });
+            loader.style.display = "none"; return;
+        }
 
         try {
-            const mKey = memoria_${usuarioAtivo};
-            const prompt = Andy, 25 anos. Usuário: ${usuarioAtivo}. Criador: Tárcio. Responda com clareza. Use [FELIZ] ou [TRISTE] no fim. Frase: ${userText};
-            
+            const mKey = `memoria_${usuarioAtivo}`;
+            const prompt = `Andy, 25 anos. Usuário: ${usuarioAtivo}. Criador: Tárcio. Responda com clareza. Use [FELIZ] ou [TRISTE] no fim. Frase: ${userText}`;
+
             const result = await model.generateContent(prompt);
             const response = await result.response;
             let text = response.text();
-            
+
             let p = 1.2;
             if (text.includes("[TRISTE]")) { body.className = "triste"; p = 0.9; }
             else if (text.includes("[FELIZ]")) { body.className = "feliz"; p = 1.4; }
-            
+
             text = text.replace(/\[.*?\]/g, "").trim();
             loader.style.display = "none";
             responseBox.innerText = text;
@@ -247,23 +236,10 @@
 
         } catch (e) {
             loader.style.display = "none";
-            
-            // --- DIAGNÓSTICO DE ERRO ---
             console.error(e);
-            let erroMsg = e.message || "";
-            
-            if (erroMsg.includes("API key not valid")) {
-                responseBox.innerText = "Nota da Andy: Tárcio, o Google diz que esta chave não é válida. Verifique se há espaços sobrando ou se a chave está correta.";
-                speak("Tárcio, parece que sua chave API tem um problema. Pode conferir os espaços?");
-            } else if (erroMsg.includes("429")) {
-                responseBox.innerText = "Andy: Muitas perguntas seguidas! Espere um minutinho para eu respirar.";
-            } else {
-                responseBox.innerText = "Erro Técnico: " + erroMsg;
-            }
+            responseBox.innerText = "Erro: " + e.message;
         }
     };
 
-    window.onload = darSaudacao;
+    document.getElementById('btn').onclick = () => recognition.start();
 </script>
-</body>
-</html>
